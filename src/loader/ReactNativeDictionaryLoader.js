@@ -2,7 +2,7 @@
 
 const DictionaryLoader = require("./DictionaryLoader");
 import * as FileSystem from "expo-file-system";
-import { unzip } from "react-zlib-js";
+import pako from "pako";
 import { Buffer } from "buffer";
 
 function ReactNativeDictionaryLoader(options) {
@@ -38,16 +38,10 @@ ReactNativeDictionaryLoader.prototype.loadArrayBuffer = async function (
     // Convert the base64 string to a Buffer
     const buffer = Buffer.from(fileContents, "base64");
 
-    // Decompress using react-zlib-js
-    unzip(buffer, (error, decompressed) => {
-      if (error) {
-        callback(error, null);
-      } else {
-        // Convert Buffer to ArrayBuffer
-        const arrayBuffer = Uint8Array.from(decompressed).buffer;
-        callback(null, arrayBuffer);
-      }
-    });
+    // Decompress using pako
+    const decompressed = pako.inflate(buffer);
+    const arrayBuffer = Uint8Array.from(decompressed).buffer;
+    callback(null, arrayBuffer);
   } catch (error) {
     console.error(`Error in loadArrayBuffer for ${filename}:`, error);
     callback(error, null);
