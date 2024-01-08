@@ -17,7 +17,6 @@
 
 "use strict";
 
-var path = require("path");
 var async = require("async");
 var DynamicDictionaries = require("../dict/DynamicDictionaries");
 
@@ -26,9 +25,8 @@ var DynamicDictionaries = require("../dict/DynamicDictionaries");
  * @param {string} dic_path Dictionary path
  * @constructor
  */
-function DictionaryLoader(dic_path) {
+function DictionaryLoader() {
     this.dic = new DynamicDictionaries();
-    this.dic_path = dic_path;
 }
 
 DictionaryLoader.prototype.loadArrayBuffer = function (file, callback) {
@@ -41,14 +39,13 @@ DictionaryLoader.prototype.loadArrayBuffer = function (file, callback) {
  */
 DictionaryLoader.prototype.load = function (load_callback) {
     var dic = this.dic;
-    var dic_path = this.dic_path;
     var loadArrayBuffer = this.loadArrayBuffer;
 
     async.parallel([
         // Trie
         function (callback) {
             async.map([ "base.dat.gz", "check.dat.gz" ], function (filename, _callback) {
-                loadArrayBuffer(path.join(dic_path, filename), function (err, buffer) {
+                loadArrayBuffer(filename, function (err, buffer) {  
                     if(err) {
                         return _callback(err);
                     }
@@ -68,14 +65,16 @@ DictionaryLoader.prototype.load = function (load_callback) {
         // Token info dictionaries
         function (callback) {
             async.map([ "tid.dat.gz", "tid_pos.dat.gz", "tid_map.dat.gz" ], function (filename, _callback) {
-                loadArrayBuffer(path.join(dic_path, filename), function (err, buffer) {
+                loadArrayBuffer(filename, function (err, buffer) {
                     if(err) {
+                        console.log(`Error loading file: ${filename}`, err);
                         return _callback(err);
                     }
                     _callback(null, buffer);
                 });
             }, function (err, buffers) {
                 if(err) {
+                    console.log('Error in async map for token info dictionaries:', err);
                     return callback(err);
                 }
                 var token_info_buffer = new Uint8Array(buffers[0]);
@@ -88,7 +87,7 @@ DictionaryLoader.prototype.load = function (load_callback) {
         },
         // Connection cost matrix
         function (callback) {
-            loadArrayBuffer(path.join(dic_path, "cc.dat.gz"), function (err, buffer) {
+            loadArrayBuffer("cc.dat.gz", function (err, buffer) {
                 if(err) {
                     return callback(err);
                 }
@@ -100,7 +99,7 @@ DictionaryLoader.prototype.load = function (load_callback) {
         // Unknown dictionaries
         function (callback) {
             async.map([ "unk.dat.gz", "unk_pos.dat.gz", "unk_map.dat.gz", "unk_char.dat.gz", "unk_compat.dat.gz", "unk_invoke.dat.gz" ], function (filename, _callback) {
-                loadArrayBuffer(path.join(dic_path, filename), function (err, buffer) {
+                loadArrayBuffer(filename, function (err, buffer) {
                     if(err) {
                         return _callback(err);
                     }
